@@ -1679,7 +1679,8 @@ ofproto_destroy__(struct ofproto *ofproto)
     }
     free(ofproto->tables);
     struct ubpf_vm *vm;
-    HMAP_FOR_EACH(vm, hmap_node, &ofproto->ubpf_vms) {
+    struct ubpf_vm *vm_next;
+    HMAP_FOR_EACH_SAFE(vm, vm_next, hmap_node, &ofproto->ubpf_vms) {
         ubpf_destroy(vm);
     }
     hmap_clear(&ofproto->ubpf_vms);
