@@ -373,6 +373,44 @@ struct ubpf_func_proto ubpf_get_rss_hash_proto = {
         .ret = UNKNOWN,
 };
 
+static uint32_t
+ubpf_get_metric(void *ctx, int type)
+{
+    struct dp_packet *packet = (struct dp_packet *) ctx;
+    uint32_t ret_val = -1;
+
+    switch (type) {
+        case 1: /* input port */
+            ret_val = ofp_to_u16(packet->md.in_port.ofp_port);
+            break;
+
+        default: /* invalid metric, */
+            ret_val = 0xFFFFFFFF;
+            break;
+    }
+
+    return ret_val;
+}
+
+struct ubpf_func_proto ubpf_get_metric_proto = {
+        .func = (ext_func)ubpf_get_metric,
+        .arg_types = {
+                CTX_PTR,
+                IMM,
+                0xff,
+                0xff,
+                0xff,
+        },
+        .arg_sizes = {
+                0xff,
+                0xff,
+                0xff,
+                0xff,
+                0xff,
+        },
+        .ret = UNKNOWN,
+};
+
 static void
 register_functions(struct ubpf_vm *vm)
 {
@@ -386,4 +424,5 @@ register_functions(struct ubpf_vm *vm)
     ubpf_register_function(vm, UBPF_ADJUST_HEAD_ID, "ubpf_adjust_head", ubpf_adjust_head_proto);
     ubpf_register_function(vm, 9, "ubpf_packet_data", ubpf_packet_data_proto);
     ubpf_register_function(vm, 10, "ubpf_get_rss_hash", ubpf_get_rss_hash_proto);
+    ubpf_register_function(vm, 11, "ubpf_get_metric", ubpf_get_metric_proto);
 }
