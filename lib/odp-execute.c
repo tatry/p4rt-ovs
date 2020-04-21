@@ -788,7 +788,7 @@ odp_execute_check_pkt_len(void *dp, struct dp_packet *packet, bool steal,
 }
 
 static void
-odp_execute_bpf_prog(struct dp_packet *packet, const struct nlattr *a, struct dp_packet_batch *batch) {
+odp_execute_bpf_prog(struct dp_packet *packet, const struct nlattr *a, size_t actions_len, struct dp_packet_batch *batch) {
     bool packet_pass[batch->count];
     int nr_dropped = 0;
     DP_PACKET_BATCH_FOR_EACH (i, packet, batch) {
@@ -796,6 +796,15 @@ odp_execute_bpf_prog(struct dp_packet *packet, const struct nlattr *a, struct dp
                 nl_attr_get(a);
         struct ubpf_vm *bpf_prog = exec_bpf_prog->vm;
         if (bpf_prog) {
+            /* Find out an output port if available.
+             * TODO: For performance reason limit search depth. */
+            const struct nlattr *output_action_attr = nl_attr_find__(a, actions_len, OVS_ACTION_ATTR_OUTPUT);
+            if (output_action_attr) {
+                packet->md.output_port = nl_attr_get_u32(output_action_attr);
+            } else {
+                packet->md.output_port = -1;
+            }
+
             if (!execute_bpf_prog(packet, bpf_prog)) {
                 dp_packet_delete(packet);
                 packet_pass[i] = false;
@@ -1101,7 +1110,7 @@ odp_execute_actions(void *dp, struct dp_packet_batch *batch, bool steal,
             return;
         }
         case OVS_ACTION_ATTR_EXECUTE_PROG:
-            odp_execute_bpf_prog(packet, a, batch);
+            odp_execute_bpf_prog(packet, a, actions_len, batch);
             break;
         case OVS_ACTION_ATTR_OUTPUT:
         case OVS_ACTION_ATTR_TUNNEL_PUSH:

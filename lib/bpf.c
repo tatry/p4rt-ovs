@@ -384,6 +384,10 @@ ubpf_get_metric(void *ctx, int type)
             ret_val = ofp_to_u16(packet->md.in_port.ofp_port);
             break;
 
+        case 2: /* output port, if known*/
+            ret_val = (packet->md.output_port);
+            break;
+
         default: /* invalid metric, */
             ret_val = 0xFFFFFFFF;
             break;
