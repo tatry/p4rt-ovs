@@ -374,7 +374,7 @@ struct ubpf_func_proto ubpf_get_rss_hash_proto = {
 };
 
 static uint32_t
-ubpf_get_metric(void *ctx, int type)
+ubpf_get_metadata(void *ctx, int type)
 {
     struct dp_packet *packet = (struct dp_packet *) ctx;
     uint32_t ret_val = -1;
@@ -385,10 +385,13 @@ ubpf_get_metric(void *ctx, int type)
             break;
 
         case 2: /* output port, if known*/
-            ret_val = (packet->md.output_port);
+            ret_val = ofp_to_u16(packet->md.output_port);
+            if (ret_val == 0) {
+                ret_val = -1;
+            }
             break;
 
-        default: /* invalid metric, */
+        default: /* invalid metadata, */
             ret_val = 0xFFFFFFFF;
             break;
     }
@@ -396,8 +399,8 @@ ubpf_get_metric(void *ctx, int type)
     return ret_val;
 }
 
-struct ubpf_func_proto ubpf_get_metric_proto = {
-        .func = (ext_func)ubpf_get_metric,
+struct ubpf_func_proto ubpf_get_metadata_proto = {
+        .func = (ext_func)ubpf_get_metadata,
         .arg_types = {
                 CTX_PTR,
                 IMM,
@@ -428,5 +431,5 @@ register_functions(struct ubpf_vm *vm)
     ubpf_register_function(vm, UBPF_ADJUST_HEAD_ID, "ubpf_adjust_head", ubpf_adjust_head_proto);
     ubpf_register_function(vm, 9, "ubpf_packet_data", ubpf_packet_data_proto);
     ubpf_register_function(vm, 10, "ubpf_get_rss_hash", ubpf_get_rss_hash_proto);
-    ubpf_register_function(vm, 11, "ubpf_get_metric", ubpf_get_metric_proto);
+    ubpf_register_function(vm, 11, "ubpf_get_metadata", ubpf_get_metadata_proto);
 }

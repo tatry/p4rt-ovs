@@ -1123,6 +1123,7 @@ struct ofpact_execute_prog {
     OFPACT_PADDED_MEMBERS(
         struct ofpact ofpact;
         ovs_be16 prog_id;
+        ofp_port_t of_output_port;
     );
 };
 

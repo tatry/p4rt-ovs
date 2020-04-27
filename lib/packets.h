@@ -112,7 +112,7 @@ PADDED_MEMBERS_CACHELINE_MARKER(CACHE_LINE_SIZE, cacheline0,
     struct conn *conn;          /* Cached conntrack connection. */
     bool reply;                 /* True if reply direction. */
     bool icmp_related;          /* True if ICMP related. */
-    uint32_t output_port;       /* Output port if available */
+    ofp_port_t output_port;     /* (BPF ext) Output port if available */
 );
 
 PADDED_MEMBERS_CACHELINE_MARKER(CACHE_LINE_SIZE, cacheline1,

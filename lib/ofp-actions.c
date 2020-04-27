@@ -678,6 +678,14 @@ parse_OUTPUT(const char *arg, const struct ofpact_parse_params *pp)
         struct ofpact_output *output = ofpact_put_OUTPUT(pp->ofpacts);
         output->port = port;
         output->max_len = output->port == OFPP_CONTROLLER ? UINT16_MAX : 0;
+
+        // find out if BPF prog action is present
+        const struct ofpact *first = ofpbuf_at_assert(pp->ofpacts, 0, sizeof *first);
+        const struct ofpact *ofpact_prog = ofpact_find_type_flattened(first, OFPACT_EXECUTE_PROG, &output->ofpact);
+        if (ofpact_prog) {
+            ofpact_get_EXECUTE_PROG(ofpact_prog)->of_output_port = port;
+        }
+
         return NULL;
     }
 
@@ -7594,9 +7602,10 @@ struct nx_action_execute_prog {
     ovs_be32 vendor;            /* NX_VENDOR_ID. */
     ovs_be16 subtype;           /* NXAST_EXECUTE_PROG. */
     ovs_be16 prog_id;           /* Set BPF prog to execute. */
+    ovs_be16 output_port;       /* Output port from flow (implicit). */
     /* Followed by:
      * - Enough 0-bytes to pad the action out to 16 bytes. */
-    uint8_t pad[4];
+    uint8_t pad[2];
 };
 OFP_ASSERT(sizeof(struct nx_action_execute_prog) == 16);
 
@@ -7609,6 +7618,7 @@ decode_NXAST_RAW_EXECUTE_PROG(const struct nx_action_execute_prog *nebp,
 
     oep = ofpact_put_EXECUTE_PROG(out);
     oep->prog_id = ntohs(nebp->prog_id);
+    oep->of_output_port = ntohs(nebp->output_port);
 
     return 0;
 }
@@ -7620,6 +7630,7 @@ encode_EXECUTE_PROG(const struct ofpact_execute_prog *execute_prog,
 {
     struct nx_action_execute_prog *nebp = put_NXAST_EXECUTE_PROG(out);
     nebp->prog_id = htons(execute_prog->prog_id);
+    nebp->output_port = htons(execute_prog->of_output_port);
 }
 
 static void
@@ -7634,7 +7645,9 @@ static char * OVS_WARN_UNUSED_RESULT
 parse_EXECUTE_PROG(char *arg OVS_UNUSED, const struct ofpact_parse_params *pp)
 {
 //    *pp->usable_protocols &= OFPUTIL_P_OF13_UP;
-    return str_to_u16(arg, "prog_id", &ofpact_put_EXECUTE_PROG(pp->ofpacts)->prog_id);
+    struct ofpact_execute_prog * oep = ofpact_put_EXECUTE_PROG(pp->ofpacts);
+    oep->of_output_port = u16_to_ofp(0);
+    return str_to_u16(arg, "prog_id", &oep->prog_id);
 }
 
 static enum ofperr

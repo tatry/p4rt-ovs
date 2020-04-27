@@ -6338,6 +6338,9 @@ xlate_execute_prog_action(struct xlate_ctx *ctx,
             execute_bpf_prog->vm = vm;
         }
     }
+
+    /* Implicit flow metadata */
+    execute_bpf_prog->of_output_port = execute_prog->of_output_port;
 }
 
 static void
