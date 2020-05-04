@@ -376,6 +376,8 @@ struct ubpf_func_proto ubpf_get_rss_hash_proto = {
 static uint32_t
 ubpf_get_metadata(void *ctx, int type)
 {
+    /* TODO: convert host byte order to network byte order */
+
     struct dp_packet *packet = (struct dp_packet *) ctx;
     uint32_t ret_val = -1;
 
@@ -389,6 +391,15 @@ ubpf_get_metadata(void *ctx, int type)
             if (ret_val == 0) {
                 ret_val = -1;
             }
+            break;
+
+        case 3: /* Ingress timestamp */
+            ret_val = 0xFFFFFFFF & (packet->md.ingress_tstp);
+            break;
+
+        case 4: /* Hop latency, truncated to least significant 32 bits.
+                 * Due to OvS architecture, it cannot include the output queue here. */
+            ret_val = 0xFFFFFFFF & (time_usec() - packet->md.ingress_tstp);
             break;
 
         default: /* invalid metadata, */

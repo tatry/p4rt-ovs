@@ -112,7 +112,6 @@ PADDED_MEMBERS_CACHELINE_MARKER(CACHE_LINE_SIZE, cacheline0,
     struct conn *conn;          /* Cached conntrack connection. */
     bool reply;                 /* True if reply direction. */
     bool icmp_related;          /* True if ICMP related. */
-    ofp_port_t output_port;     /* (BPF ext) Output port if available */
 );
 
 PADDED_MEMBERS_CACHELINE_MARKER(CACHE_LINE_SIZE, cacheline1,
@@ -126,6 +125,9 @@ PADDED_MEMBERS_CACHELINE_MARKER(CACHE_LINE_SIZE, cacheline2,
     struct flow_tnl tunnel;     /* Encapsulating tunnel parameters. Note that
                                  * if 'ip_dst' == 0, the rest of the fields may
                                  * be uninitialized. */
+    /* BPF extension */
+    ofp_port_t output_port;     /* Output port if available */
+    long long ingress_tstp;     /* Ingress timestamp, usec */
 );
 };
 

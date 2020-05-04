@@ -6616,6 +6616,9 @@ dfc_processing(struct dp_netdev_pmd_thread *pmd,
 
         if (!md_is_valid) {
             pkt_metadata_init(&packet->md, port_no);
+            /* See pmd_thread_ctx_time_update(), which was earlier called in dp_netdev_process_rxq_port()
+             * For recirculated packets this field will not be updated */
+            packet->md.ingress_tstp = pmd->ctx.now;
         }
 
         if ((*recirc_depth_get() == 0) &&
