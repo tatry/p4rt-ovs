@@ -4239,6 +4239,20 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
             nl_msg_put_odp_port(ctx->odp_actions,
                                 OVS_ACTION_ATTR_OUTPUT,
                                 out_port);
+
+            /* Find first execute BPF prog action. This approach is valid if there exists only one BPF prog per flow.
+             * Instead of this we can do some pointers magic (save offset to BPF prog in ctx) */
+            const struct nlattr *nl_bpf_prog = nl_attr_find__(ctx->odp_actions->data,
+                                                              ctx->odp_actions->size,
+                                                              OVS_ACTION_ATTR_EXECUTE_PROG);
+            if (nl_bpf_prog) {
+                /* VLOG_INFO("Output port: %d, ofp=%d", out_port, ofp_to_u16(ofp_port)); */
+                struct ovs_action_execute_bpf_prog *bpf_prog;
+                bpf_prog = (struct ovs_action_execute_bpf_prog *) nl_attr_get_unspec(nl_bpf_prog, sizeof *bpf_prog);
+                bpf_prog->dpif_output_port = out_port;
+                bpf_prog->of_output_port = ofp_port;
+            }
+
         }
 
         ctx->sflow_odp_port = odp_port;
@@ -6340,7 +6354,8 @@ xlate_execute_prog_action(struct xlate_ctx *ctx,
     }
 
     /* Implicit flow metadata */
-    execute_bpf_prog->of_output_port = execute_prog->of_output_port;
+    execute_bpf_prog->of_output_port = execute_prog->of_output_port; /* is not always valid..., will be updated */
+    execute_bpf_prog->dpif_output_port = 0;
 }
 
 static void
