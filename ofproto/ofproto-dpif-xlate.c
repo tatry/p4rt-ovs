@@ -410,6 +410,15 @@ struct xlate_ctx {
     struct ofpbuf action_set;   /* Action set. */
 
     enum xlate_error error;     /* Translation failed. */
+
+    /* BPF extension.
+     *
+     * IMPORTANT: These fields usage assume that there is no prepended nlattrs to
+     * odp_action between set and use. As of 6th May 2020, there are no
+     * nl_msg_push*(), nl_msg_put_nlmsghdr() or nl_msg_put_genlmsghdr() function
+     * calls in this file. */
+    bool has_bpf_prog;          /* BPF prog is in actions set */
+    uint32_t bpf_prog_offset;   /* Where to find BPF prog action, odp_action->data may be reallocated */
 };
 
 /* Structure to track VLAN manipulation */
@@ -4240,19 +4249,18 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
                                 OVS_ACTION_ATTR_OUTPUT,
                                 out_port);
 
-            /* Find first execute BPF prog action. This approach is valid if there exists only one BPF prog per flow.
-             * Instead of this we can do some pointers magic (save offset to BPF prog in ctx) */
-            const struct nlattr *nl_bpf_prog = nl_attr_find__(ctx->odp_actions->data,
-                                                              ctx->odp_actions->size,
-                                                              OVS_ACTION_ATTR_EXECUTE_PROG);
-            if (nl_bpf_prog) {
-                /* VLOG_INFO("Output port: %d, ofp=%d", out_port, ofp_to_u16(ofp_port)); */
-                struct ovs_action_execute_bpf_prog *bpf_prog;
-                bpf_prog = (struct ovs_action_execute_bpf_prog *) nl_attr_get_unspec(nl_bpf_prog, sizeof *bpf_prog);
-                bpf_prog->dpif_output_port = out_port;
-                bpf_prog->of_output_port = ofp_port;
+            /* Find last execute BPF prog action. This approach is valid
+             * if there exists only one BPF prog per flow. */
+            if (ctx->has_bpf_prog) {
+                /* Validate offset - there is at least one action after execute_bpf_prog - output action */
+                if (ctx->bpf_prog_offset + sizeof(struct ovs_action_execute_bpf_prog) < ctx->odp_actions->size) {
+                    struct ovs_action_execute_bpf_prog *bpf_prog;
+                    bpf_prog = (struct ovs_action_execute_bpf_prog *)
+                            (((uint8_t *) ctx->odp_actions->data) + (ctx->bpf_prog_offset));
+                    bpf_prog->dpif_output_port = out_port;
+                    bpf_prog->of_output_port = ofp_port;
+                }
             }
-
         }
 
         ctx->sflow_odp_port = odp_port;
@@ -6356,6 +6364,9 @@ xlate_execute_prog_action(struct xlate_ctx *ctx,
     /* Implicit flow metadata */
     execute_bpf_prog->of_output_port = execute_prog->of_output_port; /* is not always valid..., will be updated */
     execute_bpf_prog->dpif_output_port = 0;
+
+    ctx->has_bpf_prog = true;
+    ctx->bpf_prog_offset = ((uint8_t *) execute_bpf_prog) - ((uint8_t *) ctx->odp_actions->data);
 }
 
 static void
@@ -7515,6 +7526,8 @@ xlate_actions(struct xlate_in *xin, struct xlate_out *xout)
 
         .action_set_has_group = false,
         .action_set = OFPBUF_STUB_INITIALIZER(action_set_stub),
+
+        .has_bpf_prog = false,
     };
 
     /* 'base_flow' reflects the packet as it came in, but we need it to reflect
