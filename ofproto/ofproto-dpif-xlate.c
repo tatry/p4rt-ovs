@@ -4248,24 +4248,22 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
             nl_msg_put_odp_port(ctx->odp_actions,
                                 OVS_ACTION_ATTR_OUTPUT,
                                 out_port);
-
-            /* Find last execute BPF prog action. This approach is valid
-             * if there exists only one BPF prog per flow. */
-            if (ctx->has_bpf_prog) {
-                /* Validate offset - there is at least one action after execute_bpf_prog - output action */
-                if (ctx->bpf_prog_offset + sizeof(struct ovs_action_execute_bpf_prog) < ctx->odp_actions->size) {
-                    struct ovs_action_execute_bpf_prog *bpf_prog;
-                    bpf_prog = (struct ovs_action_execute_bpf_prog *)
-                            (((uint8_t *) ctx->odp_actions->data) + (ctx->bpf_prog_offset));
-                    bpf_prog->dpif_output_port = out_port;
-                    bpf_prog->of_output_port = ofp_port;
-                }
-            }
         }
 
         ctx->sflow_odp_port = odp_port;
         ctx->sflow_n_outputs++;
         ctx->nf_output_iface = ofp_port;
+    }
+
+    /* Find last execute BPF prog action. This approach is valid
+     * if there exists only one BPF prog per flow. */
+    if (ctx->has_bpf_prog) {
+        struct ovs_action_execute_bpf_prog *bpf_prog;
+        bpf_prog = ofpbuf_at(ctx->odp_actions, ctx->bpf_prog_offset, sizeof *bpf_prog);
+        if (bpf_prog) {
+            bpf_prog->dpif_output_port = out_port;
+            bpf_prog->of_output_port = ofp_port;
+        }
     }
 
     if (mbridge_has_mirrors(ctx->xbridge->mbridge) && xport->xbundle) {
@@ -6366,7 +6364,7 @@ xlate_execute_prog_action(struct xlate_ctx *ctx,
     execute_bpf_prog->dpif_output_port = 0;
 
     ctx->has_bpf_prog = true;
-    ctx->bpf_prog_offset = ((uint8_t *) execute_bpf_prog) - ((uint8_t *) ctx->odp_actions->data);
+    ctx->bpf_prog_offset = ((char *) execute_bpf_prog) - ((char *) ctx->odp_actions->data);
 }
 
 static void
