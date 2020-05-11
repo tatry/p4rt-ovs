@@ -806,6 +806,13 @@ odp_execute_bpf_prog(void *dp OVS_UNUSED, struct dp_packet *packet, const struct
         if (bpf_prog) {
             /* Fill in some metadata */
             packet->md.output_port = exec_bpf_prog->of_output_port;
+            if (exec_bpf_prog->output_netdev) {
+                struct netdev_stats stats;
+                /* TODO: netdev_get_stats() uses memset, so there is need to version without that memset */
+                netdev_get_stats(exec_bpf_prog->output_netdev, &stats);
+                VLOG_INFO("port %d: tx %lu rx %lu MTU %d", exec_bpf_prog->dpif_output_port, stats.tx_bytes,
+                           stats.rx_bytes, exec_bpf_prog->mtu);
+            }
 
             if (!execute_bpf_prog(packet, bpf_prog)) {
                 dp_packet_delete(packet);

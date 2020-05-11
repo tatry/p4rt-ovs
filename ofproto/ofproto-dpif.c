@@ -3688,6 +3688,12 @@ ofp_port_to_ofport(const struct ofproto_dpif *ofproto, ofp_port_t ofp_port)
     return ofport ? ofport_dpif_cast(ofport) : NULL;
 }
 
+int
+ofport_dpif_get_mtu(const struct ofport_dpif * port)
+{
+    return port ? port->up.mtu : 0;
+}
+
 static void
 ofproto_port_from_dpif_port(struct ofproto_dpif *ofproto,
                             struct ofproto_port *ofproto_port,

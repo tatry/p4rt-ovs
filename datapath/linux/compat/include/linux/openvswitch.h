@@ -745,6 +745,8 @@ struct ovs_action_execute_bpf_prog {
     struct ubpf_vm *vm;
     ofp_port_t of_output_port;
     odp_port_t dpif_output_port;
+    struct netdev *output_netdev;
+    int mtu;
 };
 #endif
 

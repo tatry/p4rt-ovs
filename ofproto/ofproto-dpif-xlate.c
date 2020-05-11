@@ -4256,13 +4256,16 @@ compose_output_action__(struct xlate_ctx *ctx, ofp_port_t ofp_port,
     }
 
     /* Find last execute BPF prog action. This approach is valid
-     * if there exists only one BPF prog per flow. */
+     * if there exists only one BPF prog per flow.
+     * TODO: consider that output to patch port may not reach this place */
     if (ctx->has_bpf_prog) {
         struct ovs_action_execute_bpf_prog *bpf_prog;
         bpf_prog = ofpbuf_at(ctx->odp_actions, ctx->bpf_prog_offset, sizeof *bpf_prog);
         if (bpf_prog) {
             bpf_prog->dpif_output_port = out_port;
             bpf_prog->of_output_port = ofp_port;
+            bpf_prog->output_netdev = xport->netdev;
+            bpf_prog->mtu = ofport_dpif_get_mtu(xport->ofport);
         }
     }
 
@@ -6362,6 +6365,8 @@ xlate_execute_prog_action(struct xlate_ctx *ctx,
     /* Implicit flow metadata */
     execute_bpf_prog->of_output_port = execute_prog->of_output_port; /* is not always valid..., will be updated */
     execute_bpf_prog->dpif_output_port = 0;
+    execute_bpf_prog->output_netdev = NULL;
+    execute_bpf_prog->mtu = 0;
 
     ctx->has_bpf_prog = true;
     ctx->bpf_prog_offset = ((char *) execute_bpf_prog) - ((char *) ctx->odp_actions->data);
