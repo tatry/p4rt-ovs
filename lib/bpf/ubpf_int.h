@@ -22,7 +22,7 @@
 #include "openvswitch/hmap.h"
 
 #define MAX_INSTS 65536
-#define STACK_SIZE 1024
+#define STACK_SIZE 2048
 #define NB_FUNC_ARGS 5
 #define MAX_SIZE_ARG 8
 #define UBPF_ADJUST_HEAD_ID 8
