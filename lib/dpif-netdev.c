@@ -7151,7 +7151,6 @@ dp_execute_cb(void *aux_, struct dp_packet_batch *packets_,
         if (OVS_LIKELY(p)) {
             struct dp_packet *packet;
             struct dp_packet_batch out;
-
             if (!should_steal) {
                 dp_packet_batch_clone(&out, packets_);
                 dp_packet_batch_reset_cutlen(packets_);
@@ -7184,6 +7183,7 @@ dp_execute_cb(void *aux_, struct dp_packet_batch *packets_,
                                                              pmd->ctx.last_rxq;
                 dp_packet_batch_add(&p->output_pkts, packet);
             }
+
             return;
         } else {
             COVERAGE_ADD(datapath_drop_invalid_port,

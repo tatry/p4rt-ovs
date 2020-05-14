@@ -814,13 +814,15 @@ odp_execute_bpf_prog(void *dp OVS_UNUSED, struct dp_packet *packet, const struct
                            stats.rx_bytes, exec_bpf_prog->mtu);
             }
 
-            if (!execute_bpf_prog(packet, bpf_prog)) {
-                dp_packet_delete(packet);
-                packet_pass[i] = false;
-                nr_dropped++;
-            } else {
-                packet_pass[i] = true;
-            }
+            bpf_result result = execute_bpf_prog(packet, bpf_prog);
+
+//            if (!execute_bpf_prog(packet, bpf_prog)) {
+//                dp_packet_delete(packet);
+//                packet_pass[i] = false;
+//                nr_dropped++;
+//            } else {
+//                packet_pass[i] = true;
+//            }
         }
     }
     int step = 0;
@@ -1118,8 +1120,18 @@ odp_execute_actions(void *dp, struct dp_packet_batch *batch, bool steal,
             dp_packet_delete_batch(batch, steal);
             return;
         }
-        case OVS_ACTION_ATTR_EXECUTE_PROG:
+        case OVS_ACTION_ATTR_EXECUTE_PROG: {
             odp_execute_bpf_prog(dp, packet, a, batch);
+            //uint32_t port = 2;
+            //size_t total_size = NLA_HDRLEN + sizeof(port);
+            //struct nlattr *nla = xmalloc(total_size);
+            //nla->nla_len = total_size;
+            //nla->nla_type = OVS_ACTION_ATTR_OUTPUT;
+            //nullable_memcpy(nla+1, &port, sizeof(port));
+            //dp_execute_action(dp, batch, nla, steal);
+            //free(nla);
+            //return;
+        }
             break;
         case OVS_ACTION_ATTR_OUTPUT:
         case OVS_ACTION_ATTR_TUNNEL_PUSH:
