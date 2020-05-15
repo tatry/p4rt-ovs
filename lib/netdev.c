@@ -1561,6 +1561,14 @@ netdev_set_miimon_interval(struct netdev *netdev, long long int interval)
             : EOPNOTSUPP);
 }
 
+int
+netdev_get_stats_uninit(const struct netdev *netdev, struct netdev_stats *stats)
+{
+    return (netdev->netdev_class->get_stats
+            ? netdev->netdev_class->get_stats(netdev, stats)
+            : EOPNOTSUPP);
+}
+
 /* Retrieves current device stats for 'netdev'. */
 int
 netdev_get_stats(const struct netdev *netdev, struct netdev_stats *stats)

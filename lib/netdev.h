@@ -266,6 +266,8 @@ int netdev_arp_lookup(const struct netdev *, ovs_be32 ip,
 struct netdev *netdev_find_dev_by_in4(const struct in_addr *);
 
 /* Statistics. */
+int netdev_get_stats_uninit(const struct netdev *netdev,
+                            struct netdev_stats *stats);
 int netdev_get_stats(const struct netdev *, struct netdev_stats *);
 int netdev_get_custom_stats(const struct netdev *,
                             struct netdev_custom_stats *);

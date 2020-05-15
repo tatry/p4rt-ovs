@@ -35,6 +35,18 @@ struct standard_metadata {
     uint32_t packet_length; /* bit<32> */
     enum ubpf_action output_action; /* ubpf_action */
     uint32_t output_port; /* bit<32> */
+
+    uint32_t hop_latency; /* bit<32> */
+
+    uint64_t ingress_timestamp; /* bit<64> */
+    uint64_t egress_timestamp; /* bit<64> */
+
+    uint64_t output_port_tx_bytes; /* bit<64> */
+    uint64_t output_port_rx_bytes; /* bit<64> */
+    uint64_t output_port_tx_pkts; /* bit<64> */
+    uint64_t output_port_rx_pkts; /* bit<64> */
+
+    uint32_t output_mtu; /* bit<32> */
 };
 
 struct ubpf_vm;

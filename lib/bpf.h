@@ -35,7 +35,8 @@ int ubpf_map_update(struct ubpf_map *map, const void *key, void *item);
 
 //bpf_result  ubpf_handle_packet(struct ubpf_vm *vm, struct dp_packet *packet);
 
-bpf_result run_bpf_prog(const struct dp_packet *packet, struct ubpf_vm *vm);
+struct ovs_action_execute_bpf_prog;
+bpf_result run_bpf_prog(const struct dp_packet *packet, const struct ovs_action_execute_bpf_prog *vm);
 
 static inline bool
 ubpf_is_empty(struct ubpf_vm *vm) {

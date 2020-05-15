@@ -18,6 +18,7 @@
 
 #include <config.h>
 #include "bpf.h"
+#include "netdev.h"
 
 #include "openvswitch/vlog.h"
 
@@ -75,16 +76,46 @@ load_bpf_prog(struct ubpf_vm *vm, size_t code_len, char *code)
 //}
 
 inline bpf_result
-run_bpf_prog(const struct dp_packet *packet, struct ubpf_vm *vm) {
+run_bpf_prog(const struct dp_packet *packet, const struct ovs_action_execute_bpf_prog *prog) {
     size_t pkt_len = dp_packet_size(packet);
     struct standard_metadata std_meta = {
             .input_port = ofp_to_u16(packet->md.in_port.ofp_port),
             .packet_length = pkt_len,
             .output_action = PASS,
-            .output_port = 0
+            /* use datapath port numbering to have the same space as in the input port */
+            .output_port = prog->dpif_output_port,
+            .ingress_timestamp = packet->md.ingress_tstp,
+
+            .output_port_tx_bytes = 0xFFFFFFFFFFFFFFFF,
+            .output_port_rx_bytes = 0xFFFFFFFFFFFFFFFF,
+            .output_port_tx_pkts = 0xFFFFFFFFFFFFFFFF,
+            .output_port_rx_pkts = 0xFFFFFFFFFFFFFFFF,
+
+            .output_mtu = prog->mtu
     };
 
-    uint64_t ret = vm->jitted(packet, &std_meta);
+    if (prog->output_netdev) {
+        struct netdev_stats stats;
+        if (netdev_get_stats_uninit(prog->output_netdev, &stats)) {
+            /* Error during get stats*/
+            std_meta.output_port_tx_bytes = 0xFFFFFFFFFFFFFFFF;
+            std_meta.output_port_rx_bytes = 0xFFFFFFFFFFFFFFFF;
+            std_meta.output_port_tx_pkts = 0xFFFFFFFFFFFFFFFF;
+            std_meta.output_port_rx_pkts = 0xFFFFFFFFFFFFFFFF;
+        } else {
+            std_meta.output_port_tx_bytes = stats.tx_bytes;
+            std_meta.output_port_rx_bytes = stats.rx_bytes;
+            std_meta.output_port_tx_pkts = stats.tx_packets;
+            std_meta.output_port_rx_pkts = stats.rx_packets;
+        }
+    }
+    VLOG_INFO("port %d: tx %lu rx %lu MTU %d", std_meta.output_port, std_meta.output_port_tx_bytes,
+            std_meta.output_port_rx_bytes, std_meta.output_mtu);
+
+    std_meta.egress_timestamp = time_usec();
+    std_meta.hop_latency = (uint32_t) (std_meta.egress_timestamp - std_meta.ingress_timestamp);
+
+    uint64_t ret = prog->vm->jitted(packet, &std_meta);
 
     bpf_result res = {
         .action = std_meta.output_action,
@@ -417,7 +448,7 @@ ubpf_get_metadata(void *ctx, int type)
             break;
 
         case 2: /* output port, if known*/
-            ret_val = ofp_to_u16(packet->md.output_port);
+            //ret_val = ofp_to_u16(packet->md.output_port);
             if (ret_val == 0) {
                 ret_val = -1;
             }

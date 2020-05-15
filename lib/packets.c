@@ -491,9 +491,9 @@ pop_nsh(struct dp_packet *packet)
 }
 
 bpf_result
-execute_bpf_prog(struct dp_packet *packet, struct ubpf_vm *vm)
+execute_bpf_prog(struct dp_packet *packet, const struct ovs_action_execute_bpf_prog *prog)
 {
-    return run_bpf_prog(packet, vm);
+    return run_bpf_prog(packet, prog);
 }
 
 /* Converts hex digits in 'hex' to an Ethernet packet in '*packetp'.  The
