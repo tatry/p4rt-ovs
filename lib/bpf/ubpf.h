@@ -31,10 +31,13 @@ enum ubpf_action {
 };
 
 struct standard_metadata {
-    const uint16_t input_port; /* bit<32> */
+    const uint32_t input_port; /* bit<32> */
     uint32_t packet_length; /* bit<32> */
     enum ubpf_action output_action; /* ubpf_action */
     uint32_t output_port; /* bit<32> */
+
+    uint8_t clone;
+    uint32_t clone_port;
 
     uint32_t hop_latency; /* bit<32> */
 
