@@ -435,44 +435,16 @@ struct ubpf_func_proto ubpf_get_rss_hash_proto = {
 };
 
 static uint32_t
-ubpf_get_metadata(void *ctx, int type)
+ubpf_truncate_packet(void *ctx, int maxlen)
 {
-    /* TODO: convert host byte order to network byte order */
+    if (maxlen < 0)
+        return 0;
 
-    struct dp_packet *packet = (struct dp_packet *) ctx;
-    uint32_t ret_val = -1;
-
-    switch (type) {
-        case 1: /* input port */
-            ret_val = ofp_to_u16(packet->md.in_port.ofp_port);
-            break;
-
-        case 2: /* output port, if known*/
-            //ret_val = ofp_to_u16(packet->md.output_port);
-            if (ret_val == 0) {
-                ret_val = -1;
-            }
-            break;
-
-        case 3: /* Ingress timestamp */
-            ret_val = 0xFFFFFFFF & (packet->md.ingress_tstp);
-            break;
-
-        case 4: /* Hop latency, truncated to least significant 32 bits.
-                 * Due to OvS architecture, it cannot include the output queue here. */
-            ret_val = 0xFFFFFFFF & (time_usec() - packet->md.ingress_tstp);
-            break;
-
-        default: /* invalid metadata, */
-            ret_val = 0xFFFFFFFF;
-            break;
-    }
-
-    return ret_val;
+    return dp_packet_set_cutlen((struct dp_packet *) ctx, maxlen);
 }
 
-struct ubpf_func_proto ubpf_get_metadata_proto = {
-        .func = (ext_func)ubpf_get_metadata,
+struct ubpf_func_proto ubpf_truncate_packet_proto = {
+        .func = (ext_func)ubpf_truncate_packet,
         .arg_types = {
                 CTX_PTR,
                 IMM,
@@ -503,5 +475,5 @@ register_functions(struct ubpf_vm *vm)
     ubpf_register_function(vm, UBPF_ADJUST_HEAD_ID, "ubpf_adjust_head", ubpf_adjust_head_proto);
     ubpf_register_function(vm, 9, "ubpf_packet_data", ubpf_packet_data_proto);
     ubpf_register_function(vm, 10, "ubpf_get_rss_hash", ubpf_get_rss_hash_proto);
-    ubpf_register_function(vm, 11, "ubpf_get_metadata", ubpf_get_metadata_proto);
+    ubpf_register_function(vm, 11, "ubpf_truncate_packet", ubpf_truncate_packet_proto);
 }

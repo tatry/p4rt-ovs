@@ -787,17 +787,10 @@ odp_execute_check_pkt_len(void *dp, struct dp_packet *packet, bool steal,
                         dp_execute_action);
 }
 
-/* code duplication (see dpif-netdev.c:6978) */
-/*struct dp_netdev_execute_aux {
-    struct dp_netdev_pmd_thread *pmd;
-    const struct flow *flow;
-};*/
-
 static void
 odp_execute_bpf_prog(void *dp OVS_UNUSED, struct dp_packet *packet, const struct nlattr *a, struct dp_packet_batch *batch) {
     bool packet_pass[batch->count];
     int nr_dropped = 0;
-    /*struct dp_netdev_execute_aux * aux = (struct dp_netdev_execute_aux *) dp;*/
 
     DP_PACKET_BATCH_FOR_EACH (i, packet, batch) {
         const struct ovs_action_execute_bpf_prog *exec_bpf_prog =
@@ -813,6 +806,10 @@ odp_execute_bpf_prog(void *dp OVS_UNUSED, struct dp_packet *packet, const struct
             } else {
                 packet_pass[i] = true;
             }
+        }
+
+        if (dp_packet_get_cutlen(packet) > 0) {
+            batch->trunc = true;
         }
     }
     int step = 0;
