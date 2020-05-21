@@ -109,8 +109,6 @@ run_bpf_prog(const struct dp_packet *packet, const struct ovs_action_execute_bpf
             std_meta.output_port_rx_pkts = stats.rx_packets;
         }
     }
-    VLOG_INFO("port %d: tx %lu rx %lu MTU %d", std_meta.output_port, std_meta.output_port_tx_bytes,
-            std_meta.output_port_rx_bytes, std_meta.output_mtu);
 
     std_meta.egress_timestamp = time_usec();
     std_meta.hop_latency = (uint32_t) (std_meta.egress_timestamp - std_meta.ingress_timestamp);
