@@ -94,6 +94,7 @@ run_bpf_prog(const struct dp_packet *packet, const struct ovs_action_execute_bpf
             .output_mtu = prog->mtu
     };
 
+#if 0
     if (prog->output_netdev) {
         struct netdev_stats stats;
         if (netdev_get_stats_uninit(prog->output_netdev, &stats)) {
@@ -109,6 +110,7 @@ run_bpf_prog(const struct dp_packet *packet, const struct ovs_action_execute_bpf
             std_meta.output_port_rx_pkts = stats.rx_packets;
         }
     }
+#endif
 
     std_meta.egress_timestamp = time_usec();
     std_meta.hop_latency = (uint32_t) (std_meta.egress_timestamp - std_meta.ingress_timestamp);
