@@ -74,6 +74,7 @@ EXTRA_DIST = \
 	CONTRIBUTING.rst \
 	LICENSE \
 	MAINTAINERS.rst \
+	README.rst \
 	README-original.rst \
 	README.md \
 	utilities/mininet/p4rtovs_mininet.py \
